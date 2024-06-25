@@ -6,6 +6,7 @@
 # --------------------------------------------------------
 # A script to run multinode training with submitit.
 # --------------------------------------------------------
+#omg fml i hategit 
 
 import argparse
 import os
