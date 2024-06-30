@@ -20,6 +20,8 @@ from timm.utils import accuracy
 
 import util.misc as misc
 import util.lr_sched as lr_sched
+import wandb
+import pdb
 
 
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
@@ -48,20 +50,29 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
         samples = samples.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True)
-
-        if mixup_fn is not None:
-            samples, targets = mixup_fn(samples, targets)
+        # targets = targets.unsqueeze(1)
+        # pdb.set_trace()
+        # if mixup_fn is not None:
+        #     samples, targets = mixup_fn(samples, targets)
 
         with torch.cuda.amp.autocast():
             outputs = model(samples)
-            loss = criterion(outputs, targets)
+            x = outputs.squeeze()
+            x = x.float()
+            #pdb.set_trace()
+            loss = criterion(x, targets)
+            #print("loss is ;", loss)
 
         loss_value = loss.item()
+        mae_loss = torch.nn.L1Loss()
+        mae = mae_loss(x, targets)
+        
 
         if not math.isfinite(loss_value):
             print("Loss is {}, stopping training".format(loss_value))
             sys.exit(1)
 
+        
         loss /= accum_iter
         loss_scaler(loss, optimizer, clip_grad=max_norm,
                     parameters=model.parameters(), create_graph=False,
@@ -77,6 +88,8 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         for group in optimizer.param_groups:
             min_lr = min(min_lr, group["lr"])
             max_lr = max(max_lr, group["lr"])
+
+        wandb.log({"lr": max_lr, "train_loss": loss_value, "train mae": mae})
 
         metric_logger.update(lr=max_lr)
 
@@ -97,7 +110,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
 @torch.no_grad()
 def evaluate(data_loader, model, device):
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.MSELoss()
 
     metric_logger = misc.MetricLogger(delimiter="  ")
     header = 'Test:'
@@ -114,17 +127,20 @@ def evaluate(data_loader, model, device):
         # compute output
         with torch.cuda.amp.autocast():
             output = model(images)
-            loss = criterion(output, target)
+            x = output.squeeze()
+            x = x.float()
+            loss = criterion(x, target)
+        loss_value = loss.item()
+        wandb.log({"eval_loss": loss_value})
 
-        acc1, acc5 = accuracy(output, target, topk=(1, 5))
+    #     acc1, acc5 = accuracy(output, target, topk=(1, 5))
 
         batch_size = images.shape[0]
         metric_logger.update(loss=loss.item())
-        metric_logger.meters['acc1'].update(acc1.item(), n=batch_size)
-        metric_logger.meters['acc5'].update(acc5.item(), n=batch_size)
-    # gather the stats from all processes
+    #     metric_logger.meters['acc1'].update(acc1.item(), n=batch_size)
+    #     metric_logger.meters['acc5'].update(acc5.item(), n=batch_size)
+    # # gather the stats from all processes
     metric_logger.synchronize_between_processes()
-    print('* Acc@1 {top1.global_avg:.3f} Acc@5 {top5.global_avg:.3f} loss {losses.global_avg:.3f}'
-          .format(top1=metric_logger.acc1, top5=metric_logger.acc5, losses=metric_logger.loss))
+    print('loss {losses.global_avg:.3f}'.format(losses=metric_logger.loss))
 
     return {k: meter.global_avg for k, meter in metric_logger.meters.items()}

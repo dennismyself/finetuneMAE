@@ -1,0 +1,6 @@
+/models/
+/checkpoints/
+/output_dir/
+/wandb/
+/checkpoint/
+/finetune_checkpoint-1/

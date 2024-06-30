@@ -32,9 +32,11 @@ def parse_args():
 
 
 def get_shared_folder() -> Path:
+    # import pdb
+    # pdb.set_trace()
     user = os.getenv("USER")
-    if Path("/checkpoint/").is_dir():
-        p = Path(f"/checkpoint/{user}/experiments")
+    if Path("checkpoint").is_dir():
+        p = Path(f"/home/jq271/rds/hpc-work/Dissertation/mae/checkpoint/{user}/experiments")
         p.mkdir(exist_ok=True)
         return p
     raise RuntimeError("No shared folder available")
@@ -85,6 +87,8 @@ class Trainer(object):
 
 
 def main():
+    # import pdb
+    # pdb.set_trace()
     args = parse_args()
     if args.job_dir == "":
         args.job_dir = get_shared_folder() / "%j"

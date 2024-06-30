@@ -23,17 +23,17 @@ from torch.utils.tensorboard import SummaryWriter
 
 import timm
 
-assert timm.__version__ == "0.3.2" # version check
+#assert timm.__version__ == "0.3.2" # version check
 from timm.models.layers import trunc_normal_
 from timm.data.mixup import Mixup
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 
 import util.lr_decay as lrd
 import util.misc as misc
-from util.datasets import build_dataset
+from util.datasets import build_dataset_new
 from util.pos_embed import interpolate_pos_embed
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
-
+import wandb
 import models_vit
 
 from engine_finetune import train_one_epoch, evaluate
@@ -119,7 +119,7 @@ def get_args_parser():
     # Dataset parameters
     parser.add_argument('--data_path', default='/datasets01/imagenet_full_size/061417/', type=str,
                         help='dataset path')
-    parser.add_argument('--nb_classes', default=1000, type=int,
+    parser.add_argument('--nb_classes', default=5, type=int,
                         help='number of the classification types')
 
     parser.add_argument('--output_dir', default='./output_dir',
@@ -156,12 +156,60 @@ def get_args_parser():
 
 
 def main(args):
+    wandb.init(
+    # set the wandb project where this run will be logged
+    project="finetune mae",
+
+    # track hyperparameters and run metadata
+    config={
+    "epochs": 40,
+    }
+)
+    
     misc.init_distributed_mode(args)
 
     print('job dir: {}'.format(os.path.dirname(os.path.realpath(__file__))))
     print("{}".format(args).replace(', ', ',\n'))
 
     device = torch.device(args.device)
+
+     #------------start loding checkpoints ------------------
+    # model = models_vit.__dict__[args.model](
+    #     num_classes=args.nb_classes,
+    #     drop_path_rate=args.drop_path,
+    #     global_pool=args.global_pool,
+    # )
+    # Load the checkpoint
+    # checkpoint = torch.load(args.finetune, map_location='cpu')
+
+    # print("Load pre-trained checkpoint from: %s" % args.finetune)
+    # checkpoint_model = checkpoint['model']
+    # state_dict = model.state_dict()
+    # for k in ['head.weight', 'head.bias']:
+    #     if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
+    #         print(f"Removing key {k} from pretrained checkpoint")
+    #         del checkpoint_model[k]
+
+    # # interpolate position embedding
+    # interpolate_pos_embed(model, checkpoint_model)
+
+    # # load pre-trained model
+    # msg = model.load_state_dict(checkpoint_model, strict=False)
+    # print(msg)
+    # state_dict = model.state_dict()
+    # # for k in ['head.weight', 'head.bias']:
+    # #     if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
+    # #         print(f"Removing key {k} from pretrained checkpoint")
+    # #         del checkpoint_model[k]
+
+    # # # Load model state dict from checkpoint
+    # # model.load_state_dict(checkpoint['model'])
+    # for name, param in model.named_parameters():
+    #     print(name, param.size())
+    # import pdb
+    # pdb.set_trace()
+    #------------end loding checkpoints ------------------
+
 
     # fix the seed for reproducibility
     seed = args.seed + misc.get_rank()
@@ -170,12 +218,15 @@ def main(args):
 
     cudnn.benchmark = True
 
-    dataset_train = build_dataset(is_train=True, args=args)
-    dataset_val = build_dataset(is_train=False, args=args)
+    dataset_train, dataset_val, _ = build_dataset_new(args=args)
+    
+
+    
 
     if True:  # args.distributed:
         num_tasks = misc.get_world_size()
         global_rank = misc.get_rank()
+        print("GPU Rank: ", global_rank)
         sampler_train = torch.utils.data.DistributedSampler(
             dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True
         )
@@ -207,6 +258,11 @@ def main(args):
         drop_last=True,
     )
 
+    # for ele in data_loader_train:
+    #     import pdb
+    #     pdb.set_trace()
+    
+
     data_loader_val = torch.utils.data.DataLoader(
         dataset_val, sampler=sampler_val,
         batch_size=args.batch_size,
@@ -230,6 +286,8 @@ def main(args):
         global_pool=args.global_pool,
     )
 
+   
+
     if args.finetune and not args.eval:
         checkpoint = torch.load(args.finetune, map_location='cpu')
 
@@ -248,10 +306,10 @@ def main(args):
         msg = model.load_state_dict(checkpoint_model, strict=False)
         print(msg)
 
-        if args.global_pool:
-            assert set(msg.missing_keys) == {'head.weight', 'head.bias', 'fc_norm.weight', 'fc_norm.bias'}
-        else:
-            assert set(msg.missing_keys) == {'head.weight', 'head.bias'}
+        # if args.global_pool:
+        #     assert set(msg.missing_keys) == {'head.weight', 'head.bias', 'fc_norm.weight', 'fc_norm.bias'}
+        # else:
+        #     assert set(msg.missing_keys) == {'head.weight', 'head.bias'}
 
         # manually initialize fc layer
         trunc_normal_(model.head.weight, std=2e-5)
@@ -261,7 +319,7 @@ def main(args):
     model_without_ddp = model
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-    print("Model = %s" % str(model_without_ddp))
+    #print("Model = %s" % str(model_without_ddp))
     print('number of params (M): %.2f' % (n_parameters / 1.e6))
 
     eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
@@ -294,7 +352,7 @@ def main(args):
         criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
     else:
         criterion = torch.nn.CrossEntropyLoss()
-
+    criterion = torch.nn.MSELoss()
     print("criterion = %s" % str(criterion))
 
     misc.load_model(args=args, model_without_ddp=model_without_ddp, optimizer=optimizer, loss_scaler=loss_scaler)
@@ -323,13 +381,11 @@ def main(args):
                 loss_scaler=loss_scaler, epoch=epoch)
 
         test_stats = evaluate(data_loader_val, model, device)
-        print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
-        max_accuracy = max(max_accuracy, test_stats["acc1"])
-        print(f'Max accuracy: {max_accuracy:.2f}%')
+        # print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
+        # max_accuracy = max(max_accuracy, test_stats["acc1"])
+        # print(f'Max accuracy: {max_accuracy:.2f}%')
 
         if log_writer is not None:
-            log_writer.add_scalar('perf/test_acc1', test_stats['acc1'], epoch)
-            log_writer.add_scalar('perf/test_acc5', test_stats['acc5'], epoch)
             log_writer.add_scalar('perf/test_loss', test_stats['loss'], epoch)
 
         log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
