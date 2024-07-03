@@ -27,7 +27,10 @@ import timm
 #assert timm.__version__ == "0.3.2"  # version check
 import timm.optim.optim_factory as optim_factory
 
+import wandb
+
 import util.misc as misc
+from util.datasets import build_dataset_new, build_dataset_pretrain
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 
 import models_mae
@@ -105,6 +108,15 @@ def get_args_parser():
 
 
 def main(args):
+    wandb.init(
+    # set the wandb project where this run will be logged
+    project="pretrain mae",
+
+    # track hyperparameters and run metadata
+    config={
+    "epochs": 40,
+    }
+)
     misc.init_distributed_mode(args)
 
     print('job dir: {}'.format(os.path.dirname(os.path.realpath(__file__))))
@@ -120,13 +132,19 @@ def main(args):
     cudnn.benchmark = True
 
     # simple augmentation
-    transform_train = transforms.Compose([
-            transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-    dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
-    print(dataset_train)
+    # import pdb
+    # pdb.set_trace()
+    # transform_train = transforms.Compose([
+    #         transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
+    #         transforms.RandomHorizontalFlip(),
+    #         transforms.ToTensor(),
+    #         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    # dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
+    # print(dataset_train)
+    dataset_train, dataset_val, _ = build_dataset_pretrain(args=args)
+    
+
+    
 
     if True:  # args.distributed:
         num_tasks = misc.get_world_size()
@@ -158,7 +176,7 @@ def main(args):
     model.to(device)
 
     model_without_ddp = model
-    print("Model = %s" % str(model_without_ddp))
+    #print("Model = %s" % str(model_without_ddp))
 
     eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
     

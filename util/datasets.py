@@ -24,6 +24,9 @@ from torchvision import transforms
 from PIL import Image
 import torch
 from timm.data import create_transform
+from torchvision import transforms
+import torchvision.datasets as datasets
+from torch.utils.data import random_split, Dataset
 
 
 IMAGENET_DEFAULT_MEAN = (0.485, 0.456, 0.406)
@@ -62,6 +65,26 @@ def build_transform(is_train, args):
         transform = transforms.Compose(t)
     return transform
 
+# ----------------------- Build Trwnsform Pretrain --------------------
+
+IMAGENET_DEFAULT_MEAN = (0.485, 0.456, 0.406)
+IMAGENET_DEFAULT_STD = (0.229, 0.224, 0.225)
+
+def build_transform_pretrain(args):
+    mean = IMAGENET_DEFAULT_MEAN
+    std = IMAGENET_DEFAULT_STD
+
+
+    # Update the train transformation with the new specification
+    transform = transforms.Compose([
+        transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean, std)
+    ])
+ 
+
+    return transform
 
 # ----------------------- Build Classes --------------------------
 class MAEDataset(Dataset):
@@ -104,6 +127,30 @@ def build_dataset_new(args):
     # pdb.set_trace
     transform_train = build_transform(is_train='train', args=args)
     transform_eval = build_transform(is_train='eval', args=args)
+    
+    dataset_train = MAEDataset(data.iloc[data_train.indices], image_dir, transform=transform_train)
+    dataset_val = MAEDataset(data.iloc[data_val.indices], image_dir, transform=transform_eval)
+    dataset_test = MAEDataset(data.iloc[data_test.indices], image_dir, transform=transform_eval)
+    
+    return dataset_train, dataset_val, dataset_test
+
+def build_dataset_pretrain(args):
+    csv_file = os.path.join(args.data_path, 'regression_dataset.csv')
+    image_dir = os.path.join(args.data_path, 'VLM_images')
+    
+    # Read the Excel file using openpyxl engine
+    data = pd.read_csv(csv_file)
+
+    # Split the dataset
+    train_size = int(1 * len(data))
+    val_size = int(0 * len(data))
+    test_size = len(data) - train_size - val_size
+    
+    data_train, data_val, data_test = random_split(data.index.tolist(), [train_size, val_size, test_size])
+    # import pdb
+    # pdb.set_trace
+    transform_train = build_transform_pretrain(args=args)
+    transform_eval = build_transform_pretrain(args=args)
     
     dataset_train = MAEDataset(data.iloc[data_train.indices], image_dir, transform=transform_train)
     dataset_val = MAEDataset(data.iloc[data_val.indices], image_dir, transform=transform_eval)

@@ -1,0 +1,86 @@
+wandb: Currently logged in as: jq271. Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.17.3 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.17.0
+wandb: Run data is saved locally in /rds/user/jq271/hpc-work/Dissertation/mae/wandb/run-20240701_161720-qkglmocz
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run electric-dew-7
+wandb: ⭐️ View project at https://wandb.ai/jq271/pretrain%20mae
+wandb: 🚀 View run at https://wandb.ai/jq271/pretrain%20mae/runs/qkglmocz
+| distributed init (rank 0): env://, gpu 0
+[16:17:25.260009] job dir: /rds/user/jq271/hpc-work/Dissertation/mae
+[16:17:25.260271] Namespace(batch_size=64,
+epochs=800,
+accum_iter=1,
+model='mae_vit_large_patch16',
+input_size=224,
+mask_ratio=0.75,
+norm_pix_loss=True,
+weight_decay=0.05,
+lr=None,
+blr=0.00015,
+min_lr=0.0,
+warmup_epochs=40,
+data_path='/home/jq271/rds/hpc-work/Dissertation/LLaVA/data/VLMPretrain',
+output_dir='/home/jq271/rds/hpc-work/Dissertation/mae/saved_checkpoints/finetune_checkpoint',
+log_dir='./output_dir',
+device='cuda',
+seed=0,
+resume='/home/jq271/rds/hpc-work/Dissertation/mae/checkpoints/mae_pretrain_vit_large.pth',
+start_epoch=0,
+num_workers=10,
+pin_mem=True,
+world_size=1,
+local_rank=-1,
+dist_on_itp=False,
+dist_url='env://',
+rank=0,
+gpu=0,
+distributed=True,
+dist_backend='nccl')
+[16:17:25.979170] Sampler_train = <torch.utils.data.distributed.DistributedSampler object at 0x7f283d852800>
+[16:17:29.158839] base lr: 1.50e-04
+[16:17:29.159098] actual lr: 3.75e-05
+[16:17:29.159202] accumulate grad iterations: 1
+[16:17:29.159295] effective batch size: 64
+[16:17:29.178766] AdamW (
+Parameter Group 0
+    amsgrad: False
+    betas: (0.9, 0.95)
+    capturable: False
+    differentiable: False
+    eps: 1e-08
+    foreach: None
+    fused: None
+    lr: 3.75e-05
+    maximize: False
+    weight_decay: 0.0
+
+Parameter Group 1
+    amsgrad: False
+    betas: (0.9, 0.95)
+    capturable: False
+    differentiable: False
+    eps: 1e-08
+    foreach: None
+    fused: None
+    lr: 3.75e-05
+    maximize: False
+    weight_decay: 0.05
+)
+Traceback (most recent call last):
+  File "/rds/user/jq271/hpc-work/Dissertation/mae/main_pretrain.py", line 239, in <module>
+    main(args)
+  File "/rds/user/jq271/hpc-work/Dissertation/mae/main_pretrain.py", line 202, in main
+    misc.load_model(args=args, model_without_ddp=model_without_ddp, optimizer=optimizer, loss_scaler=loss_scaler)
+  File "/rds/user/jq271/hpc-work/Dissertation/mae/util/misc.py", line 323, in load_model
+    model_without_ddp.load_state_dict(checkpoint['model'])
+  File "/home/jq271/.conda/envs/mae/lib/python3.10/site-packages/torch/nn/modules/module.py", line 2152, in load_state_dict
+    raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
+RuntimeError: Error(s) in loading state_dict for MaskedAutoencoderViT:
+	Missing key(s) in state_dict: "mask_token", "decoder_pos_embed", "decoder_embed.weight", "decoder_embed.bias", "decoder_blocks.0.norm1.weight", "decoder_blocks.0.norm1.bias", "decoder_blocks.0.attn.qkv.weight", "decoder_blocks.0.attn.qkv.bias", "decoder_blocks.0.attn.proj.weight", "decoder_blocks.0.attn.proj.bias", "decoder_blocks.0.norm2.weight", "decoder_blocks.0.norm2.bias", "decoder_blocks.0.mlp.fc1.weight", "decoder_blocks.0.mlp.fc1.bias", "decoder_blocks.0.mlp.fc2.weight", "decoder_blocks.0.mlp.fc2.bias", "decoder_blocks.1.norm1.weight", "decoder_blocks.1.norm1.bias", "decoder_blocks.1.attn.qkv.weight", "decoder_blocks.1.attn.qkv.bias", "decoder_blocks.1.attn.proj.weight", "decoder_blocks.1.attn.proj.bias", "decoder_blocks.1.norm2.weight", "decoder_blocks.1.norm2.bias", "decoder_blocks.1.mlp.fc1.weight", "decoder_blocks.1.mlp.fc1.bias", "decoder_blocks.1.mlp.fc2.weight", "decoder_blocks.1.mlp.fc2.bias", "decoder_blocks.2.norm1.weight", "decoder_blocks.2.norm1.bias", "decoder_blocks.2.attn.qkv.weight", "decoder_blocks.2.attn.qkv.bias", "decoder_blocks.2.attn.proj.weight", "decoder_blocks.2.attn.proj.bias", "decoder_blocks.2.norm2.weight", "decoder_blocks.2.norm2.bias", "decoder_blocks.2.mlp.fc1.weight", "decoder_blocks.2.mlp.fc1.bias", "decoder_blocks.2.mlp.fc2.weight", "decoder_blocks.2.mlp.fc2.bias", "decoder_blocks.3.norm1.weight", "decoder_blocks.3.norm1.bias", "decoder_blocks.3.attn.qkv.weight", "decoder_blocks.3.attn.qkv.bias", "decoder_blocks.3.attn.proj.weight", "decoder_blocks.3.attn.proj.bias", "decoder_blocks.3.norm2.weight", "decoder_blocks.3.norm2.bias", "decoder_blocks.3.mlp.fc1.weight", "decoder_blocks.3.mlp.fc1.bias", "decoder_blocks.3.mlp.fc2.weight", "decoder_blocks.3.mlp.fc2.bias", "decoder_blocks.4.norm1.weight", "decoder_blocks.4.norm1.bias", "decoder_blocks.4.attn.qkv.weight", "decoder_blocks.4.attn.qkv.bias", "decoder_blocks.4.attn.proj.weight", "decoder_blocks.4.attn.proj.bias", "decoder_blocks.4.norm2.weight", "decoder_blocks.4.norm2.bias", "decoder_blocks.4.mlp.fc1.weight", "decoder_blocks.4.mlp.fc1.bias", "decoder_blocks.4.mlp.fc2.weight", "decoder_blocks.4.mlp.fc2.bias", "decoder_blocks.5.norm1.weight", "decoder_blocks.5.norm1.bias", "decoder_blocks.5.attn.qkv.weight", "decoder_blocks.5.attn.qkv.bias", "decoder_blocks.5.attn.proj.weight", "decoder_blocks.5.attn.proj.bias", "decoder_blocks.5.norm2.weight", "decoder_blocks.5.norm2.bias", "decoder_blocks.5.mlp.fc1.weight", "decoder_blocks.5.mlp.fc1.bias", "decoder_blocks.5.mlp.fc2.weight", "decoder_blocks.5.mlp.fc2.bias", "decoder_blocks.6.norm1.weight", "decoder_blocks.6.norm1.bias", "decoder_blocks.6.attn.qkv.weight", "decoder_blocks.6.attn.qkv.bias", "decoder_blocks.6.attn.proj.weight", "decoder_blocks.6.attn.proj.bias", "decoder_blocks.6.norm2.weight", "decoder_blocks.6.norm2.bias", "decoder_blocks.6.mlp.fc1.weight", "decoder_blocks.6.mlp.fc1.bias", "decoder_blocks.6.mlp.fc2.weight", "decoder_blocks.6.mlp.fc2.bias", "decoder_blocks.7.norm1.weight", "decoder_blocks.7.norm1.bias", "decoder_blocks.7.attn.qkv.weight", "decoder_blocks.7.attn.qkv.bias", "decoder_blocks.7.attn.proj.weight", "decoder_blocks.7.attn.proj.bias", "decoder_blocks.7.norm2.weight", "decoder_blocks.7.norm2.bias", "decoder_blocks.7.mlp.fc1.weight", "decoder_blocks.7.mlp.fc1.bias", "decoder_blocks.7.mlp.fc2.weight", "decoder_blocks.7.mlp.fc2.bias", "decoder_norm.weight", "decoder_norm.bias", "decoder_pred.weight", "decoder_pred.bias". 
+wandb: - 0.014 MB of 0.014 MB uploadedwandb: \ 0.014 MB of 0.027 MB uploadedwandb: 🚀 View run electric-dew-7 at: https://wandb.ai/jq271/pretrain%20mae/runs/qkglmocz
+wandb: ⭐️ View project at: https://wandb.ai/jq271/pretrain%20mae
+wandb: Synced 6 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20240701_161720-qkglmocz/logs
+[16:17:29.491635] [16:17:29.491910] [16:17:29.492032] [16:17:29.492143] [16:17:29.492250] [16:17:29.492351] 

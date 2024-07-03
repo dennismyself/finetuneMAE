@@ -54,18 +54,28 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         # pdb.set_trace()
         # if mixup_fn is not None:
         #     samples, targets = mixup_fn(samples, targets)
+        original_min = 0
+        original_max = 300
+
+        # Define the new min and max range
+        new_min = 0.0
+        new_max = 1.0
+        scaled_targets = (targets - original_min) / (original_max - original_min) * (new_max - new_min) + new_min
+        scaled_targets = scaled_targets.float()
 
         with torch.cuda.amp.autocast():
             outputs = model(samples)
             x = outputs.squeeze()
             x = x.float()
             #pdb.set_trace()
-            loss = criterion(x, targets)
+            loss = criterion(x, scaled_targets)
             #print("loss is ;", loss)
 
         loss_value = loss.item()
         mae_loss = torch.nn.L1Loss()
-        mae = mae_loss(x, targets)
+        inverse_scaled_targets = (x - new_min) / (new_max - new_min) * (original_max - original_min) + original_min
+        mae = mae_loss(inverse_scaled_targets, targets)
+        
         
 
         if not math.isfinite(loss_value):

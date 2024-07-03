@@ -16,6 +16,7 @@ import torch
 
 import util.misc as misc
 import util.lr_sched as lr_sched
+import wandb
 
 
 def train_one_epoch(model: torch.nn.Module,
@@ -48,6 +49,7 @@ def train_one_epoch(model: torch.nn.Module,
             loss, _, _ = model(samples, mask_ratio=args.mask_ratio)
 
         loss_value = loss.item()
+        
 
         if not math.isfinite(loss_value):
             print("Loss is {}, stopping training".format(loss_value))
@@ -72,6 +74,7 @@ def train_one_epoch(model: torch.nn.Module,
             This calibrates different curves when batch size changes.
             """
             epoch_1000x = int((data_iter_step / len(data_loader) + epoch) * 1000)
+            wandb.log({"train_loss": loss_value_reduce, 'lr':lr, 'epoch':epoch})
             log_writer.add_scalar('train_loss', loss_value_reduce, epoch_1000x)
             log_writer.add_scalar('lr', lr, epoch_1000x)
 
