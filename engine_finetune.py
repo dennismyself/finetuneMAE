@@ -54,12 +54,12 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         # pdb.set_trace()
         # if mixup_fn is not None:
         #     samples, targets = mixup_fn(samples, targets)
-        original_min = 0
+        original_min = 33
         original_max = 300
 
         # Define the new min and max range
-        new_min = 0.0
-        new_max = 1.0
+        new_min = 0.669
+        new_max = 1.669
         scaled_targets = (targets - original_min) / (original_max - original_min) * (new_max - new_min) + new_min
         scaled_targets = scaled_targets.float()
 
@@ -70,7 +70,8 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             #pdb.set_trace()
             loss = criterion(x, scaled_targets)
             #print("loss is ;", loss)
-
+        #pdb.set_trace()
+        x_val = float(x.mean().item())
         loss_value = loss.item()
         mae_loss = torch.nn.L1Loss()
         inverse_scaled_targets = (x - new_min) / (new_max - new_min) * (original_max - original_min) + original_min
@@ -98,8 +99,11 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         for group in optimizer.param_groups:
             min_lr = min(min_lr, group["lr"])
             max_lr = max(max_lr, group["lr"])
+        # import pdb
+        # pdb.set_trace()
+        
 
-        wandb.log({"lr": max_lr, "train_loss": loss_value, "train mae": mae})
+        wandb.log({"lr": max_lr, "train_loss": loss_value, "train mae": mae, 'x':x_val})
 
         metric_logger.update(lr=max_lr)
 

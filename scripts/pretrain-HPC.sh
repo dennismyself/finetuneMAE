@@ -14,18 +14,18 @@
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-jq271-SL2-GPU
 
-#SBATCH --output=logs/maeFinetune%A.out
+#SBATCH --output=logs/maePretrain%A.out
 
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
 #! Note probably this should not exceed the total number of GPUs in use.
-#SBATCH --ntasks=4
+#SBATCH --ntasks-per-node=4
 #! Specify the number of GPUs per node (between 1 and 4; must be 4 if nodes>1).
 #! Note that the job submission script will enforce no more than 3 cpus per GPU.
 #SBATCH --gres=gpu:4
 #! How much wallclock time will be required?
-#SBATCH --time=20:00:00
+#SBATCH --time=10:00:00
 
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=ALL

@@ -38,6 +38,8 @@ def train_one_epoch(model: torch.nn.Module,
         print('log_dir: {}'.format(log_writer.log_dir))
 
     for data_iter_step, (samples, _) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
+        # import pdb
+        # pdb.set_trace()
 
         # we use a per iteration (instead of per epoch) lr scheduler
         if data_iter_step % accum_iter == 0:
@@ -47,6 +49,26 @@ def train_one_epoch(model: torch.nn.Module,
 
         with torch.cuda.amp.autocast():
             loss, _, _ = model(samples, mask_ratio=args.mask_ratio)
+
+        # import torchvision.transforms as transforms
+        # import matplotlib.pyplot as plt
+        # import pdb
+        # pdb.set_trace()
+        # transformed_image_pil = transforms.ToPILImage()(pred[1,:,:])
+        #  # Display the images
+        # plt.figure(figsize=(4, 4))
+
+        # plt.title('After Transform')
+        # plt.imshow(transformed_image_pil)
+        # plt.axis('off')
+
+        # plt.show()
+
+        # transformed_image_pil.save('decoded.png')
+
+        # import pdb
+        # pdb.set_trace()
+
 
         loss_value = loss.item()
         

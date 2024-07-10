@@ -26,15 +26,20 @@ import torch
 from timm.data import create_transform
 from torchvision import transforms
 import torchvision.datasets as datasets
+from PIL import Image
+import matplotlib.pyplot as plt
 from torch.utils.data import random_split, Dataset
 
 
 IMAGENET_DEFAULT_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_DEFAULT_STD = (0.229, 0.224, 0.225)
+DATA_SET_MEAN = (0.56101511, 0.57580587, 0.543732820)
+DATA_SET_STD = (0.24505545, 0.2083447,  0.22679123)
+
 # ----------------------- Build Transform --------------------------
 def build_transform(is_train, args):
-    mean = IMAGENET_DEFAULT_MEAN
-    std = IMAGENET_DEFAULT_STD
+    mean = DATA_SET_MEAN
+    std = DATA_SET_STD
 
     if is_train == 'train':
         transform = create_transform(
@@ -69,14 +74,17 @@ def build_transform(is_train, args):
 
 IMAGENET_DEFAULT_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_DEFAULT_STD = (0.229, 0.224, 0.225)
+DATA_SET_MEAN = (0.5010, 0.5117, 0.4860)
+DATA_SET_STD = (0.1585, 0.1577, 0.1681)
 
 def build_transform_pretrain(args):
-    mean = IMAGENET_DEFAULT_MEAN
-    std = IMAGENET_DEFAULT_STD
+    mean = DATA_SET_MEAN
+    std = DATA_SET_STD
 
 
     # Update the train transformation with the new specification
     transform = transforms.Compose([
+        transforms.CenterCrop(args.input_size),
         transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
@@ -101,6 +109,7 @@ class MAEDataset(Dataset):
         row = self.data.iloc[idx]
         image_path = os.path.join(self.image_dir, row['image'])
         image = Image.open(image_path).convert('RGB')
+        raw_img = image.copy()
 
         if self.transform:
             image = self.transform(image)
@@ -110,6 +119,8 @@ class MAEDataset(Dataset):
         labels = torch.tensor(labels, dtype=torch.float)
         return image, labels
 
+
+#-------------------------- Finetuning -------------------------
 def build_dataset_new(args):
     csv_file = os.path.join(args.data_path, 'regression_dataset.csv')
     image_dir = os.path.join(args.data_path, 'VLM_images')
@@ -134,6 +145,7 @@ def build_dataset_new(args):
     
     return dataset_train, dataset_val, dataset_test
 
+#------------------------------ Pretraining -------------------------------------
 def build_dataset_pretrain(args):
     csv_file = os.path.join(args.data_path, 'regression_dataset.csv')
     image_dir = os.path.join(args.data_path, 'VLM_images')

@@ -60,6 +60,8 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         return outcome
     
     def forward(self, x):
+        # import pdb
+        # pdb.set_trace()
         x = self.forward_features(x)
         if self.head_dist is not None:
             x, x_dist = self.head(x[0]), self.head_dist(x[1])  # x must be a tuple
@@ -85,7 +87,8 @@ def vit_large_patch16(**kwargs):
     # import pdb
     # pdb.set_trace()
     model = VisionTransformer(
-        patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
+        #llava: 336,14
+        img_size = 224, patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
     return model
 
@@ -93,5 +96,17 @@ def vit_large_patch16(**kwargs):
 def vit_huge_patch14(**kwargs):
     model = VisionTransformer(
         patch_size=14, embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4, qkv_bias=True,
+        norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+    return model
+
+def vit_small_patch16(**kwargs):
+    model = VisionTransformer(img_size=224,
+        patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True,
+        norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+    return model
+
+def vit_tiny_patch16(**kwargs):
+    model = VisionTransformer(img_size=224,
+        patch_size=16, embed_dim=192, depth=12, num_heads=3, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
     return model

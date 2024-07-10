@@ -37,6 +37,8 @@ import models_mae
 
 from engine_pretrain import train_one_epoch
 
+from transformers import AutoImageProcessor, ViTMAEModel
+
 
 def get_args_parser():
     parser = argparse.ArgumentParser('MAE pre-training', add_help=False)
@@ -110,12 +112,16 @@ def get_args_parser():
 def main(args):
     wandb.init(
     # set the wandb project where this run will be logged
-    project="pretrain mae",
+    project="pretrain mae small",
 
     # track hyperparameters and run metadata
     config={
     "epochs": 40,
-    }
+    "size": 224,
+    'patch_size': 16,
+    "model": 'base',
+    },
+    name="training from scratch"
 )
     misc.init_distributed_mode(args)
 
@@ -142,6 +148,9 @@ def main(args):
     # dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
     # print(dataset_train)
     dataset_train, dataset_val, _ = build_dataset_pretrain(args=args)
+    # for ele in dataset_train:
+    #     import pdb
+    #     pdb.set_trace()
     
 
     
@@ -162,6 +171,30 @@ def main(args):
     else:
         log_writer = None
 
+    # import matplotlib.pyplot as plt
+    # for ele in dataset_train:
+    #     transformed_image = ele[0]
+    #     original = ele[1]
+    #     transformed_image_pil = transforms.ToPILImage()(transformed_image)
+    #      # Display the images
+    #     plt.figure(figsize=(8, 4))
+
+    #     plt.subplot(1, 2, 1)
+    #     plt.title('Before Transform')
+    #     plt.imshow(original)
+    #     plt.axis('off')
+
+    #     plt.subplot(1, 2, 2)
+    #     plt.title('After Transform')
+    #     plt.imshow(transformed_image_pil)
+    #     plt.axis('off')
+
+    #     plt.show()
+    #     original.save('original.png')
+    #     transformed_image_pil.save('transformed.png')
+    #     import pdb
+    #     pdb.set_trace()
+      
     data_loader_train = torch.utils.data.DataLoader(
         dataset_train, sampler=sampler_train,
         batch_size=args.batch_size,
@@ -169,6 +202,22 @@ def main(args):
         pin_memory=args.pin_mem,
         drop_last=True,
     )
+    # 
+
+    # # Display the images
+    #     plt.figure(figsize=(8, 4))
+
+    #     plt.subplot(1, 2, 1)
+    #     plt.title('Before Transform')
+    #     plt.imshow(raw_image[0])
+    #     plt.axis('off')
+
+    #     plt.subplot(1, 2, 2)
+    #     plt.title('After Transform')
+    #     plt.imshow(transformed_image_pil)
+    #     plt.axis('off')
+
+    #     plt.show()
     
     # define the model
     model = models_mae.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)

@@ -158,13 +158,13 @@ def get_args_parser():
 def main(args):
     wandb.init(
     # set the wandb project where this run will be logged
-    project="finetune mae",
+    project="finetune mae from scratch -tiny",
 
     # track hyperparameters and run metadata
     config={
     "epochs": 40,
     },
-    name="Use CLS token" ,
+    name="Used pretrained mae from scratch " ,
 )
     
     misc.init_distributed_mode(args)
@@ -174,42 +174,6 @@ def main(args):
 
     device = torch.device(args.device)
 
-     #------------start loding checkpoints ------------------
-    # model = models_vit.__dict__[args.model](
-    #     num_classes=args.nb_classes,
-    #     drop_path_rate=args.drop_path,
-    #     global_pool=args.global_pool,
-    # )
-    # Load the checkpoint
-    # checkpoint = torch.load(args.finetune, map_location='cpu')
-
-    # print("Load pre-trained checkpoint from: %s" % args.finetune)
-    # checkpoint_model = checkpoint['model']
-    # state_dict = model.state_dict()
-    # for k in ['head.weight', 'head.bias']:
-    #     if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
-    #         print(f"Removing key {k} from pretrained checkpoint")
-    #         del checkpoint_model[k]
-
-    # # interpolate position embedding
-    # interpolate_pos_embed(model, checkpoint_model)
-
-    # # load pre-trained model
-    # msg = model.load_state_dict(checkpoint_model, strict=False)
-    # print(msg)
-    # state_dict = model.state_dict()
-    # # for k in ['head.weight', 'head.bias']:
-    # #     if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
-    # #         print(f"Removing key {k} from pretrained checkpoint")
-    # #         del checkpoint_model[k]
-
-    # # # Load model state dict from checkpoint
-    # # model.load_state_dict(checkpoint['model'])
-    # for name, param in model.named_parameters():
-    #     print(name, param.size())
-    # import pdb
-    # pdb.set_trace()
-    #------------end loding checkpoints ------------------
 
 
     # fix the seed for reproducibility
@@ -286,6 +250,8 @@ def main(args):
         drop_path_rate=args.drop_path,
         global_pool=args.global_pool,
     )
+    # import pdb
+    # pdb.set_trace()
 
    
 
