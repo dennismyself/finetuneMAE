@@ -36,7 +36,7 @@ IMAGENET_DEFAULT_STD = (0.229, 0.224, 0.225)
 DATA_SET_MEAN = (0.56101511, 0.57580587, 0.543732820)
 DATA_SET_STD = (0.24505545, 0.2083447,  0.22679123)
 
-# ----------------------- Build Transform --------------------------
+# ----------------------- Build Transform Finetune --------------------------
 def build_transform(is_train, args):
     mean = DATA_SET_MEAN
     std = DATA_SET_STD
@@ -56,21 +56,21 @@ def build_transform(is_train, args):
         )
     else:
         t = []
-        if args.input_size <= 224:
-            crop_pct = 224 / 256
-        else:
-            crop_pct = 1.0
-        size = int(args.input_size / crop_pct)
+        # if args.input_size <= 224:
+        #     crop_pct = 224 / 256
+        # else:
+        #     crop_pct = 1.0
+        # size = int(args.input_size / crop_pct)
         t.append(
-            transforms.Resize(size, interpolation=transforms.InterpolationMode.BICUBIC), 
+            transforms.Resize(args.input_size, interpolation=transforms.InterpolationMode.BICUBIC), 
         )
-        t.append(transforms.CenterCrop(args.input_size))
+        #t.append(transforms.CenterCrop(args.input_size))
         t.append(transforms.ToTensor())
         t.append(transforms.Normalize(mean, std))
         transform = transforms.Compose(t)
     return transform
 
-# ----------------------- Build Trwnsform Pretrain --------------------
+# ----------------------- Build Transform Pretrain --------------------
 
 IMAGENET_DEFAULT_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_DEFAULT_STD = (0.229, 0.224, 0.225)
@@ -84,9 +84,10 @@ def build_transform_pretrain(args):
 
     # Update the train transformation with the new specification
     transform = transforms.Compose([
-        transforms.CenterCrop(args.input_size),
-        transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
+        # transforms.CenterCrop(args.input_size),
+        # transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
         transforms.RandomHorizontalFlip(),
+        transforms.Resize(args.input_size, interpolation=transforms.InterpolationMode.BICUBIC), 
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
     ])
@@ -121,7 +122,7 @@ class MAEDataset(Dataset):
 
 
 #-------------------------- Finetuning -------------------------
-def build_dataset_new(args):
+def build_dataset_finetune(args):
     csv_file = os.path.join(args.data_path, 'regression_dataset.csv')
     image_dir = os.path.join(args.data_path, 'VLM_images')
     
@@ -136,7 +137,8 @@ def build_dataset_new(args):
     data_train, data_val, data_test = random_split(data.index.tolist(), [train_size, val_size, test_size])
     # import pdb
     # pdb.set_trace
-    transform_train = build_transform(is_train='train', args=args)
+    #transform_train = build_transform(is_train='train', args=args)
+    transform_train = build_transform(is_train='eval', args=args)
     transform_eval = build_transform(is_train='eval', args=args)
     
     dataset_train = MAEDataset(data.iloc[data_train.indices], image_dir, transform=transform_train)

@@ -30,7 +30,7 @@ import timm.optim.optim_factory as optim_factory
 import wandb
 
 import util.misc as misc
-from util.datasets import build_dataset_new, build_dataset_pretrain
+from util.datasets import build_dataset_pretrain
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 
 import models_mae
@@ -112,7 +112,7 @@ def get_args_parser():
 def main(args):
     wandb.init(
     # set the wandb project where this run will be logged
-    project="pretrain mae small",
+    project="pretrain mae large - new",
 
     # track hyperparameters and run metadata
     config={

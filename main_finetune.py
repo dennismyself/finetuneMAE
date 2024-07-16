@@ -30,7 +30,7 @@ from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 
 import util.lr_decay as lrd
 import util.misc as misc
-from util.datasets import build_dataset_new
+from util.datasets import build_dataset_finetune
 from util.pos_embed import interpolate_pos_embed
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 import wandb
@@ -85,7 +85,7 @@ def get_args_parser():
                         help='Label smoothing (default: 0.1)')
 
     # * Random Erase params
-    parser.add_argument('--reprob', type=float, default=0.25, metavar='PCT',
+    parser.add_argument('--reprob', type=float, default=0, metavar='PCT',
                         help='Random erase prob (default: 0.25)')
     parser.add_argument('--remode', type=str, default='pixel',
                         help='Random erase mode (default: "pixel")')
@@ -158,7 +158,7 @@ def get_args_parser():
 def main(args):
     wandb.init(
     # set the wandb project where this run will be logged
-    project="finetune mae from scratch -tiny",
+    project="finetune mae from imagenet and pretrain - Large",
 
     # track hyperparameters and run metadata
     config={
@@ -183,9 +183,7 @@ def main(args):
 
     cudnn.benchmark = True
 
-    dataset_train, dataset_val, _ = build_dataset_new(args=args)
-    
-
+    dataset_train, dataset_val, _ = build_dataset_finetune(args=args)
     
 
     if True:  # args.distributed:

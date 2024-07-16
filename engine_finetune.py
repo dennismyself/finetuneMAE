@@ -145,7 +145,16 @@ def evaluate(data_loader, model, device):
             x = x.float()
             loss = criterion(x, target)
         loss_value = loss.item()
-        wandb.log({"eval_loss": loss_value})
+        
+        original_min = 33
+        original_max = 300
+        new_min = 0.669
+        new_max = 1.669
+        inverse_scaled_targets = (x - new_min) / (new_max - new_min) * (original_max - original_min) + original_min
+        mae_loss = torch.nn.L1Loss()
+        mae = mae_loss(inverse_scaled_targets, target)
+
+        wandb.log({"eval_loss": loss_value, 'Val_MAE': mae})
 
     #     acc1, acc5 = accuracy(output, target, topk=(1, 5))
 
