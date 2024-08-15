@@ -7,9 +7,9 @@ torchrun --nproc_per_node=4 main_pretrain.py \
     --mask_ratio 0.75 \
     --epochs 800 \
     --warmup_epochs 40 \
-    --output_dir "/home/jq271/rds/hpc-work/Dissertation/mae/saved_checkpoints/pretrain_checkpoint_large_new" \
-    --blr 1.5e-4 --weight_decay 0.05 \
-    --data_path "/home/jq271/rds/hpc-work/Dissertation/LLaVA/data/VLMPretrain" \
+    --output_dir /home/jq271/rds/hpc-work/Dissertation/mae/saved_checkpoints/pretrain_original_code \
+    --blr 1.5e-3 --weight_decay 0.05 \
+    --data_path /home/jq271/rds/hpc-work/Dissertation/LLaVA/data/VLMData/imag_folder \
     --input_size 224 \
     --resume /home/jq271/rds/hpc-work/Dissertation/mae/checkpoints/mae_pretrain_vit_large_full.pth \
 

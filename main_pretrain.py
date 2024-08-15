@@ -112,17 +112,17 @@ def get_args_parser():
 def main(args):
     wandb.init(
     # set the wandb project where this run will be logged
-    project="pretrain mae large - new",
+        project="pretrain mae large - exp2",
 
-    # track hyperparameters and run metadata
-    config={
-    "epochs": 40,
-    "size": 224,
-    'patch_size': 16,
-    "model": 'base',
-    },
-    name="training from scratch"
-)
+        # track hyperparameters and run metadata
+        config={
+        "epochs": 40,
+        "size": 224,
+        'patch_size': 16,
+        "model": 'base',
+        },
+        name="training from imagenet - original dataloader"
+    )
     misc.init_distributed_mode(args)
 
     print('job dir: {}'.format(os.path.dirname(os.path.realpath(__file__))))
@@ -147,7 +147,17 @@ def main(args):
     #         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     # dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
     # print(dataset_train)
-    dataset_train, dataset_val, _ = build_dataset_pretrain(args=args)
+
+    transform_train = transforms.Compose([
+            transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
+    print(dataset_train)
+
+    #dataset_train, _, _ = build_dataset_pretrain(args=args)
+    
     # for ele in dataset_train:
     #     import pdb
     #     pdb.set_trace()
@@ -261,7 +271,7 @@ def main(args):
             log_writer=log_writer,
             args=args
         )
-        if args.output_dir and (epoch % 20 == 0 or epoch + 1 == args.epochs):
+        if args.output_dir and (epoch % 5 == 0 or epoch + 1 == args.epochs):
             misc.save_model(
                 args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
                 loss_scaler=loss_scaler, epoch=epoch)

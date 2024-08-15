@@ -157,15 +157,15 @@ def get_args_parser():
 
 def main(args):
     wandb.init(
-    # set the wandb project where this run will be logged
-    project="finetune mae from imagenet and pretrain - Large",
+        # set the wandb project where this run will be logged
+        project="Final Finetune of MAE ViT",
 
-    # track hyperparameters and run metadata
-    config={
-    "epochs": 40,
-    },
-    name="Used pretrained mae from scratch " ,
-)
+        # track hyperparameters and run metadata
+        config={
+        "epochs": 40,
+        },
+        name="Finetuned from imagnet + PCA AUG" ,
+    )
     
     misc.init_distributed_mode(args)
 
@@ -248,9 +248,6 @@ def main(args):
         drop_path_rate=args.drop_path,
         global_pool=args.global_pool,
     )
-    # import pdb
-    # pdb.set_trace()
-
    
 
     if args.finetune and not args.eval:

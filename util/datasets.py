@@ -29,6 +29,7 @@ import torchvision.datasets as datasets
 from PIL import Image
 import matplotlib.pyplot as plt
 from torch.utils.data import random_split, Dataset
+import numpy as np
 
 
 IMAGENET_DEFAULT_MEAN = (0.485, 0.456, 0.406)
@@ -37,6 +38,52 @@ DATA_SET_MEAN = (0.56101511, 0.57580587, 0.543732820)
 DATA_SET_STD = (0.24505545, 0.2083447,  0.22679123)
 
 # ----------------------- Build Transform Finetune --------------------------
+class PCAColorAugmentation(object):
+    def __init__(self, alpha_std=0.1):
+        self.alpha_std = alpha_std
+
+    def __call__(self, img):
+        img = np.asarray(img, dtype=np.float32)
+        img = img / 255.0
+        
+        orig_shape = img.shape
+        img = img.reshape(-1, 3)
+        
+        # Center the pixel values
+        img_centered = img - np.mean(img, axis=0)
+        
+        # Calculate the covariance matrix
+        cov = np.cov(img_centered, rowvar=False)
+        
+        # Perform eigenvalue decomposition
+        eigvals, eigvecs = np.linalg.eigh(cov)
+        
+        # Sort eigenvalues and eigenvectors
+        idx = np.argsort(eigvals)[::-1]
+        eigvals = eigvals[idx]
+        eigvecs = eigvecs[:, idx]
+        
+        # Generate random alphas
+        alphas = np.random.normal(0, self.alpha_std, 3)
+        
+        # Construct the perturbation
+        delta = np.dot(eigvecs, eigvals * alphas)
+        
+        # Apply the perturbation
+        img_aug = img + delta
+        
+        # Clip the values to be between 0 and 1
+        img_aug = np.clip(img_aug, 0, 1)
+        
+        # Reshape back to the original shape
+        img_aug = img_aug.reshape(orig_shape)
+        
+        # Convert back to PIL Image
+        img_aug = (img_aug * 255).astype(np.uint8)
+        img_aug = Image.fromarray(img_aug)
+        
+        return img_aug
+    
 def build_transform(is_train, args):
     mean = DATA_SET_MEAN
     std = DATA_SET_STD
@@ -64,6 +111,7 @@ def build_transform(is_train, args):
         t.append(
             transforms.Resize(args.input_size, interpolation=transforms.InterpolationMode.BICUBIC), 
         )
+        # t.append(PCAColorAugmentation(alpha_std=0.1))
         #t.append(transforms.CenterCrop(args.input_size))
         t.append(transforms.ToTensor())
         t.append(transforms.Normalize(mean, std))
@@ -85,9 +133,8 @@ def build_transform_pretrain(args):
     # Update the train transformation with the new specification
     transform = transforms.Compose([
         # transforms.CenterCrop(args.input_size),
-        # transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
+        transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
         transforms.RandomHorizontalFlip(),
-        transforms.Resize(args.input_size, interpolation=transforms.InterpolationMode.BICUBIC), 
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
     ])
@@ -110,7 +157,7 @@ class MAEDataset(Dataset):
         row = self.data.iloc[idx]
         image_path = os.path.join(self.image_dir, row['image'])
         image = Image.open(image_path).convert('RGB')
-        raw_img = image.copy()
+        #raw_img = image.copy()
 
         if self.transform:
             image = self.transform(image)
@@ -123,55 +170,51 @@ class MAEDataset(Dataset):
 
 #-------------------------- Finetuning -------------------------
 def build_dataset_finetune(args):
-    csv_file = os.path.join(args.data_path, 'regression_dataset.csv')
-    image_dir = os.path.join(args.data_path, 'VLM_images')
+    csv_file_train = os.path.join(args.data_path, 'train_flowrate.csv')
+    train_data = pd.read_csv(csv_file_train)
+
+    csv_file_val = os.path.join(args.data_path, 'val_flowrate.csv')
+    val_data = pd.read_csv(csv_file_val)
+
+    image_dir = '/home/jq271/rds/hpc-work/Dissertation/LLaVA/data/VLMData/all_images'
     
     # Read the Excel file using openpyxl engine
-    data = pd.read_csv(csv_file)
+    
 
     # Split the dataset
-    train_size = int(0.8 * len(data))
-    val_size = int(0.15 * len(data))
-    test_size = len(data) - train_size - val_size
-    
-    data_train, data_val, data_test = random_split(data.index.tolist(), [train_size, val_size, test_size])
+    train_size = len(train_data)
+    val_size = 0
+    test_size = 0
+    data_train, _, _ = random_split(train_data.index.tolist(), [train_size, val_size, test_size])
+
+    train_size = 0
+    val_size = len(val_data)
+    test_size = 0
+    _, data_val, data_test = random_split(val_data.index.tolist(), [train_size, val_size, test_size])
     # import pdb
     # pdb.set_trace
     #transform_train = build_transform(is_train='train', args=args)
     transform_train = build_transform(is_train='eval', args=args)
     transform_eval = build_transform(is_train='eval', args=args)
     
-    dataset_train = MAEDataset(data.iloc[data_train.indices], image_dir, transform=transform_train)
-    dataset_val = MAEDataset(data.iloc[data_val.indices], image_dir, transform=transform_eval)
-    dataset_test = MAEDataset(data.iloc[data_test.indices], image_dir, transform=transform_eval)
+    dataset_train = MAEDataset(train_data.iloc[data_train.indices], image_dir, transform=transform_eval)
+    dataset_val = MAEDataset(val_data.iloc[data_val.indices], image_dir, transform=transform_eval)
+    dataset_test = MAEDataset(val_data.iloc[data_test.indices], image_dir, transform=transform_eval)
     
     return dataset_train, dataset_val, dataset_test
 
 #------------------------------ Pretraining -------------------------------------
 def build_dataset_pretrain(args):
-    csv_file = os.path.join(args.data_path, 'regression_dataset.csv')
-    image_dir = os.path.join(args.data_path, 'VLM_images')
-    
-    # Read the Excel file using openpyxl engine
-    data = pd.read_csv(csv_file)
+    csv_file_train = os.path.join(args.data_path, 'train_flowrate.csv')
+    train_data = pd.read_csv(csv_file_train)
 
-    # Split the dataset
-    train_size = int(1 * len(data))
-    val_size = int(0 * len(data))
-    test_size = len(data) - train_size - val_size
-    
-    data_train, data_val, data_test = random_split(data.index.tolist(), [train_size, val_size, test_size])
-    # import pdb
-    # pdb.set_trace
+    image_dir = '/home/jq271/rds/hpc-work/Dissertation/LLaVA/data/VLMData/all_images'
+
     transform_train = build_transform_pretrain(args=args)
-    transform_eval = build_transform_pretrain(args=args)
-    
-    dataset_train = MAEDataset(data.iloc[data_train.indices], image_dir, transform=transform_train)
-    dataset_val = MAEDataset(data.iloc[data_val.indices], image_dir, transform=transform_eval)
-    dataset_test = MAEDataset(data.iloc[data_test.indices], image_dir, transform=transform_eval)
-    
-    return dataset_train, dataset_val, dataset_test
 
+    dataset_train = MAEDataset(train_data, image_dir, transform=transform_train)
+
+    return dataset_train
 
 
 

@@ -25,7 +25,7 @@
 #! Note that the job submission script will enforce no more than 3 cpus per GPU.
 #SBATCH --gres=gpu:4
 #! How much wallclock time will be required?
-#SBATCH --time=8:00:00
+#SBATCH --time=2:00:00
 
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=ALL
